@@ -27,3 +27,8 @@
 *.exe
 *.out
 *.app
+
+# OSX / XCode
+.DS_Store
+*.pbxuser
+xcuserdata/
