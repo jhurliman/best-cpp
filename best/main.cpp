@@ -26,8 +26,10 @@ int main(int argc, const char* argv[]) {
   
   BEST<std::vector<float>> best(y1, y2, kDefaultBatchSize, now);
   
-  best.Burn(50000);
-  best.Sample(50000);
+  std::cout << "Running burn-in" << std::endl;
+  best.Burn(5000);
+  std::cout << "Running sampler" << std::endl;
+  best.Sample(5000);
   
   std::pair<float, float> hdi;
   float mean;
