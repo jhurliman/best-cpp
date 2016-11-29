@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <type_traits>
+#include <numeric>
 
 #include "amwg.hpp"
 #include "stats.hpp"
@@ -36,7 +37,7 @@ public:
     std::vector<RealType> diff(jointSize);
     std::transform(y1.begin(), y1.end(), diff.begin(), [mean](RealType x) { return x - mean; });
     std::transform(y2.begin(), y2.end(), diff.begin() + y1.size(), [mean](RealType x) { return x - mean; });
-    RealType sqSum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+    RealType sqSum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0f);
     RealType stdev = std::sqrt(sqSum / jointSize);
     
     meanMu_ = mean;
@@ -86,7 +87,7 @@ private:
   
   RealType JointPosterior(const ParamArray& params) {
     // A trick to get an exponentially distributed prior on nu that starts at 1
-    const RealType kOOTwentyNine(1.0 / 29.0);
+    const RealType kOOTwentyNine(1.0f / 29.0f);
     
     RealType mu1 = params[0];
     RealType mu2 = params[1];

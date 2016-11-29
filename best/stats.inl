@@ -55,14 +55,14 @@ template <typename Container>
 typename std::pair<typename Container::value_type, typename Container::value_type> stats::highestDensityInterval(const Container& c) {
   using RealType = typename Container::value_type;
   
-  const RealType p = 0.95;
+  const RealType p = 0.95f;
   
   // Build a sorted copy of the data
   std::vector<RealType> x(c);
   std::sort(x.begin(), x.end());
   
   // Choose a credible interval
-  size_t ciNumPoints = std::floor(static_cast<RealType>(x.size()) * p);
+  size_t ciNumPoints = static_cast<size_t>(std::floor(static_cast<RealType>(x.size()) * p));
   std::pair<RealType, RealType> minWidthCI = std::make_pair(x.front(), x.back());
   
   for (size_t i = 0; i < x.size() - ciNumPoints; i++) {

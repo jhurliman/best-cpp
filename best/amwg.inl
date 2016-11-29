@@ -2,7 +2,7 @@
 
 template<typename RealType, size_t NumParams>
 void AMWG<RealType, NumParams>::NextSample() {
-  static const RealType kTargetAcceptRate(0.44);
+  static const RealType kTargetAcceptRate(0.44f);
   
   chain_.emplace_back(state_);
   
