@@ -35,6 +35,7 @@ int main(int argc, const char* argv[]) {
   float mean;
   best.ComputeStats(hdi, mean);
   
+  std::cout.precision(std::numeric_limits<float>::max_digits10);
   std::cout << "hdi = " << hdi.first << "," << hdi.second << ", mean = " << mean << std::endl;
   return 0;
 }
