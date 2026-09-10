@@ -1,100 +1,81 @@
 #pragma once
-
+#include <algorithm>
 #include <array>
-#include <atomic>
-#include <condition_variable>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <random>
-#include <thread>
+#include <stdexcept>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 static const size_t kDefaultBatchSize = 50;
 
-/**
- * Implementation of an Adaptive Metropolis within Gibbs sampler.
- */
+// Sequential adaptive Metropolis-within-Gibbs; one proposal per coordinate.
+// Instances are not safe for concurrent mutation. Independent chains may run
+// on separate threads with independent seeds and posterior state.
 template<typename RealType, size_t NumParams>
 class AMWG {
+  static_assert(std::is_floating_point<RealType>::value, "floating point required");
+  static_assert(NumParams > 0, "at least one parameter required");
 public:
-  
   using ParamArray = std::array<RealType, NumParams>;
   using PosteriorFunc = std::function<RealType(const ParamArray&)>;
-  
-  AMWG(size_t batchSize = kDefaultBatchSize, uint32_t seed = std::mt19937::default_seed)
-    : rng_(seed)
-    , rand_(0.0, 1.0)
-    , currentPosteriorDensity_(0.0)
-    , batchSize_(batchSize)
-    , batchCount_(0)
-    , logSD_()
-    , acceptanceCount_()
-    , running_(false)
-    , epoch_(0)
-    , completedCount_(0)
-    , curParam_(0)
-  {};
-
-  ~AMWG() {
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      running_ = false;
-      epoch_ = SIZE_MAX;
-    }
-
-    cv_.notify_all();
-
-    for (auto&& t : threads_) {
-      if (t.joinable()) t.join();
-    }
+  explicit AMWG(size_t batchSize = kDefaultBatchSize,
+                uint32_t seed = std::mt19937::default_seed)
+    : rng_(seed), seed_(seed), batchSize_(batchSize) {
+    if (!batchSize) throw std::invalid_argument("batch size must be positive");
   }
-  
-  void Init(std::array<RealType, NumParams> startValues, PosteriorFunc posteriorFunc, uint32_t threads = std::thread::hardware_concurrency()) {
-    state_ = startValues;
-    posteriorFunc_ = posteriorFunc;
+  // The legacy threads argument is retained for source compatibility only.
+  void Init(ParamArray start, PosteriorFunc posterior, uint32_t threads = 1) {
+    (void)threads;
+    if (!posterior) throw std::invalid_argument("posterior is required");
+    for (auto x : start)
+      if (!std::isfinite(x)) throw std::invalid_argument("nonfinite initial state");
+    RealType density = posterior(start);
+    if (!std::isfinite(density)) throw std::invalid_argument("initial log density must be finite");
+    posterior_ = std::move(posterior);
+    state_ = start;
+    density_ = density;
     chain_.clear();
-    currentPosteriorDensity_ = posteriorFunc_(state_);
-
-    running_ = true;
-
-    threads_.reserve(threads);
-    threadStates_.resize(threads);
-
-    for (uint32_t threadId = 0; threadId < threads; threadId++) {
-      threads_.emplace_back(std::thread(&AMWG::threadWorker, this, threadId));
-    }
-  };
-  
-  size_t NextSample();
-  void Sample(size_t n);
-  void Burn(size_t n);
-  RealType posterior_density() { return currentPosteriorDensity_; };
-  std::vector<ParamArray>& chain() { return chain_; };
-  
+    rng_.seed(seed_);
+    logSD_.fill(0);
+    accepted_.fill(0);
+    batchCount_ = withinBatch_ = 0;
+    initialized_ = true;
+  }
+  size_t NextSample() {
+    requireInit();
+    chain_.reserve(chain_.size() + 1);
+    step();
+    chain_.push_back(state_);
+    return NumParams;
+  }
+  void Sample(size_t n) {
+    requireInit();
+    if (n > chain_.max_size() - chain_.size()) throw std::length_error("chain too large");
+    chain_.reserve(chain_.size() + n);
+    for (size_t i=0; i<n; ++i) { step(); chain_.push_back(state_); }
+  }
+  void Burn(size_t n) { requireInit(); for (size_t i=0; i<n; ++i) step(); }
+  RealType posterior_density() const { requireInit(); return density_; }
+  const ParamArray& state() const { requireInit(); return state_; }
+  std::vector<ParamArray>& chain() { return chain_; }
+  const std::vector<ParamArray>& chain() const { return chain_; }
 private:
-  
-  void threadWorker(uint32_t threadId);
-  void createProposal(uint32_t threadId);
-
-  PosteriorFunc posteriorFunc_;
+  void requireInit() const { if (!initialized_) throw std::logic_error("Init must be called first"); }
+  void step();
   std::mt19937 rng_;
-  std::uniform_real_distribution<RealType> rand_;
+  uint32_t seed_;
+  size_t batchSize_, batchCount_=0, withinBatch_=0;
+  bool initialized_=false;
+  PosteriorFunc posterior_;
+  ParamArray state_{}, logSD_{};
+  std::array<size_t, NumParams> accepted_{};
+  RealType density_=0;
   std::vector<ParamArray> chain_;
-  RealType currentPosteriorDensity_;
-  size_t batchSize_;
-  size_t batchCount_;
-  ParamArray state_;
-  ParamArray logSD_;
-  std::array<size_t, NumParams> acceptanceCount_;
-
-  std::atomic_bool running_;
-  std::atomic<size_t> epoch_;
-  std::atomic<size_t> completedCount_;
-  std::atomic<size_t> curParam_;
-  std::vector<std::thread> threads_;
-  std::vector<std::tuple<RealType, RealType, bool>> threadStates_;
-  std::mutex mutex_;
-  std::condition_variable cv_;
 };
-
 #include "amwg.inl"

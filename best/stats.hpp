@@ -1,31 +1,22 @@
 #pragma once
-
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <vector>
 namespace stats {
-
-template<typename RealType>
-RealType NormalPDF(RealType x, RealType mean, RealType std);
-
-template<typename RealType>
-RealType ExponentialPDF(RealType x, RealType rate);
-
-template<typename RealType>
-RealType UniformPDF(RealType a, RealType b);
-
-template<typename RealType>
-RealType StudentTPDF(RealType x, RealType dof);
-
-template<typename RealType>
-RealType Beta(RealType x, RealType y);
-
-template <typename Container>
-typename Container::value_type mean(const Container& c);
-
-template <typename Container>
-typename Container::value_type stdev(const Container& c);
-
-template <typename Container>
-typename std::pair<typename Container::value_type, typename Container::value_type> highestDensityInterval(const Container& c);
-
+template<class T> T NormalLogPDF(T x, T mean, T sd);
+template<class T> T StudentTLogPDF(T x, T dof);
+template<class T> T NormalPDF(T x, T mean, T sd);
+template<class T> T ExponentialPDF(T x, T rate);
+template<class T> T UniformPDF(T a, T b);
+template<class T> T StudentTPDF(T x, T dof);
+template<class T> T Beta(T x, T y);
+template<class C> typename C::value_type mean(const C& c);
+template<class C> typename C::value_type stdev(const C& c);
+template<class C> std::pair<typename C::value_type, typename C::value_type>
+highestDensityInterval(const C& c, double mass=0.95);
 }
-
 #include "stats.inl"

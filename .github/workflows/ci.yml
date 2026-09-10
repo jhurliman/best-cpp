@@ -1,0 +1,14 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  regression:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: c++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -pthread -Ibest tests/regression.cpp -o regression && ./regression
+      - run: c++ -std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -pthread -Ibest tests/regression.cpp -o sanitized && ./sanitized
