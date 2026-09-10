@@ -1,0 +1,12 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+cc_library(
+    name = "best_cpp",
+    hdrs = glob(["best/*.hpp", "best/*.inl"]),
+    strip_include_prefix = "best",
+    visibility = ["//visibility:public"],
+)
+cc_test(name = "regression", srcs = ["tests/regression.cpp"], deps = [":best_cpp"])
+cc_binary(name = "best", srcs = ["best/main.cpp"], deps = [":best_cpp"], tags = ["manual"])
+cc_binary(name = "benchmark", srcs = ["bench/sampler.cpp"], deps = [":best_cpp"], tags = ["manual"])

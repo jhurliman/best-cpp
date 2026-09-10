@@ -9,8 +9,14 @@ std::vector<double> readFile(const char* filename) {
   std::ifstream input(filename);
   if(!input) throw std::runtime_error(std::string("cannot open ")+filename);
   std::vector<double> values;
-  double value;
-  while(input>>value) values.push_back(value);
+  std::string token;
+  while(input>>token) {
+    size_t parsed=0;
+    double value=std::stod(token,&parsed);
+    if(parsed!=token.size() || !std::isfinite(value))
+      throw std::runtime_error(std::string("invalid numeric data in ")+filename);
+    values.push_back(value);
+  }
   if(!input.eof()) throw std::runtime_error(std::string("invalid numeric data in ")+filename);
   if(values.empty()) throw std::runtime_error(std::string("empty input: ")+filename);
   return values;

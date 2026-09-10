@@ -2,3 +2,6 @@ build*/
 install/
 bazel-*
 .DS_Store
+__pycache__/
+regression
+sanitized

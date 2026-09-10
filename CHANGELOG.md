@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 (prepared, not published)
 
 - Replace speculative parallel proposals with sequential adaptive Metropolis-within-Gibbs. Remove shared random-generator races and proposal-selection bias. The legacy `threads` argument is accepted but does not start workers.
 - `Sample(n)` records exactly n completed sweeps; `Burn(n)` advances without retaining samples. Adaptation tracks sweeps independently of chain storage. Reinitialization resets the seeded generator and adaptation. Sampling no longer prints progress.
@@ -11,3 +11,5 @@
 - Compute population standard deviation without a temporary allocation. Add numerical, lifecycle, seeded-distribution and independent-chain regression checks.
 
 These corrections change seeded sequences, inference results and invalid-input behavior. Old results should be recomputed. Reproducibility is within the same implementation and standard library; C++ random-distribution algorithms are not portable bit-for-bit.
+
+- Add CMake install/export targets, Bzlmod library and renamed-repository consumers, archive-based registry tests, standalone header checks, optional CLI/benchmark targets and Linux/macOS/Windows CI.
