@@ -63,6 +63,8 @@ int main() { try {
   V outcomes(2); std::thread t1([&]{S n;n.Init({{0}},normal);n.Sample(100);outcomes[0]=n.state()[0];});
   std::thread t2([&]{S n;n.Init({{0}},normal);n.Sample(100);outcomes[1]=n.state()[0];});t1.join();t2.join();check(outcomes[0]==outcomes[1],"independent chains");
   rejects([]{BEST<V> m(V{},V{1});}); rejects([]{BEST<V> m(V{1},V{1});});
+  { BEST<V> imbalanced(V{-1,1},V(2000001,0));
+    check(imbalanced.chain().empty(),"imbalanced groups initialize inside prior support"); }
   BEST<V> model(V{1,2,3},V{3,4,5},50,42);
   std::pair<double,double> hdi;double mean;
   rejects([&]{model.ComputeStats(hdi,mean);});

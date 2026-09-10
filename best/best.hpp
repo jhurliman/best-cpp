@@ -23,7 +23,7 @@ public:
     if (!(sigmaLow_>0) || !std::isfinite(scaledSdMu_) || !std::isfinite(sigmaHigh_))
       throw std::invalid_argument("data scale cannot represent prior bounds");
     ParamArray start={{stats::mean(y1_),stats::mean(y2_),
-      std::max(sigmaLow_,stats::stdev(y1_)),std::max(sigmaLow_,stats::stdev(y2_)),RealType(5)}};
+      std::min(sigmaHigh_,std::max(sigmaLow_,stats::stdev(y1_))),std::min(sigmaHigh_,std::max(sigmaLow_,stats::stdev(y2_))),RealType(5)}};
     sampler_.Init(start,[this](const ParamArray& p){return LogPosterior(p);});
   }
   BEST(const BEST&)=delete;

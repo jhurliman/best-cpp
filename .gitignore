@@ -1,4 +1,8 @@
 build*/
 install/
-bazel-*
+/bazel-*
+/examples/bazel-consumer/bazel-*
 .DS_Store
+__pycache__/
+regression
+sanitized
