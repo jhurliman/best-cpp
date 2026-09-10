@@ -1,66 +1,126 @@
 # best-cpp
 
-Header-only C++17 implementation of a two-group Student-t Bayesian model inspired by [Bayesian estimation supersedes the t test](https://www.krigolsonteaching.com/uploads/4/3/8/4/43848243/kruschke2012jepg.pdf). MIT licensed; no third-party C++ dependencies.
+[![CI](https://github.com/jhurliman/best-cpp/actions/workflows/ci.yml/badge.svg)](https://github.com/jhurliman/best-cpp/actions/workflows/ci.yml)
+
+**Estimate the difference between two groups and its uncertainty, in C++.** `best-cpp` fits a two-group Student-t Bayesian model and samples the posterior distribution of the difference in means.
+
+The model is inspired by [Bayesian estimation supersedes the t test](https://www.krigolsonteaching.com/uploads/4/3/8/4/43848243/kruschke2012jepg.pdf). Each group has its own mean and scale, with shared degrees of freedom that allow heavier tails than a normal distribution.
+
+- **Inspect the estimate.** Get a mean difference, a 95% empirical interval, and the full chain for your own analysis.
+- **Use it directly from C++.** Header-only, C++17, with no third-party numerical dependencies.
+- **Build your own model.** The underlying adaptive Metropolis-within-Gibbs sampler accepts a log-posterior callback.
+- **Choose your build system.** CMake installation and Bazel monorepo consumption have independent consumer checks.
+
+## Compare two groups
+
+This complete program samples the difference **A mean − B mean**:
 
 ```cpp
 #include <best.hpp>
+#include <iostream>
 #include <vector>
 
-std::vector<double> a{1.8, 2.0, 2.2, 1.9, 2.1};
-std::vector<double> b{2.8, 3.0, 3.2, 2.9, 3.1};
-BEST<std::vector<double>> model(a, b, 50, 42); // batch size, seed
-model.Burn(5000);
-model.Sample(20000);
-std::pair<double, double> interval;
-double difference;
-model.ComputeStats(interval, difference); // a mean minus b mean
+int main() {
+  const std::vector<double> a{1.8, 2.0, 2.2, 1.9, 2.1};
+  const std::vector<double> b{2.8, 3.0, 3.2, 2.9, 3.1};
+  BEST<std::vector<double>> model(a, b, 50, 42); // batch size, seed
+
+  model.Burn(5000);
+  model.Sample(20000);
+
+  std::pair<double, double> interval;
+  double difference;
+  model.ComputeStats(interval, difference);
+  std::cout << "Mean difference: " << difference << '\n'
+            << "95% sample interval: [" << interval.first
+            << ", " << interval.second << "]\n";
+}
 ```
 
-The run lengths above are illustrative. Examine multiple independently seeded chains and convergence/effective sample size before interpreting results; these diagnostics are not implemented here. A fixed seed is reproducible with the same implementation and C++ standard library, not across arbitrary toolchains. Small or weakly identified data can produce very broad posteriors.
-
-## Bazel monorepos
-
-The public target is `@bayes//:best_cpp`. Until a release is registered in BCR, use a pinned Git commit override in the root `MODULE.bazel`:
-
-```starlark
-bazel_dep(name = "best_cpp", version = "1.0.0", repo_name = "bayes")
-git_override(
-    module_name = "best_cpp",
-    remote = "https://github.com/jhurliman/best-cpp.git",
-    commit = "<full commit containing MODULE.bazel>",
-)
-```
-
-Alternatively use `local_path_override(module_name = "best_cpp", path = "/path/to/best-cpp")`. The runnable [consumer example](examples/bazel-consumer) tests this with a renamed repository. Set C++17 or later in the consuming toolchain (`--cxxopt=-std=c++17` for GCC/Clang). No repository-name assumptions or third-party numerical dependencies are imposed. Bazel 9.2 is tested; the module uses rules_cc 0.2.22. After BCR registration, the override can be removed. This prepared version is **not registered or released yet**.
+Run lengths are illustrative, not a convergence guarantee. Check multiple independently seeded chains and effective sample size before interpreting results; those diagnostics are not built in. Small or weakly identified datasets can produce broad posteriors. A fixed seed reproduces a run within the same implementation and C++ standard library, not bit-for-bit across all toolchains.
 
 ## CMake
+
+No external numerical library is required. To install the headers and exported target:
 
 ```sh
 cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/path/to/prefix
 cmake --install build
 ```
 
-Consumers use `find_package(best_cpp 1 CONFIG REQUIRED)` and `target_link_libraries(app PRIVATE best_cpp::best_cpp)`, with the install prefix in `CMAKE_PREFIX_PATH`. `add_subdirectory` exposes the same target. No global compiler flags are changed and tests/examples are off by default. The target preserves `#include <best.hpp>`, `<amwg.hpp>` and `<stats.hpp>`; installed files live under `include/best_cpp`. Raw-header consumers can add the source `best/` directory to their include path.
+Then use the package from your application:
 
-## Sampling and model contract
+```cmake
+find_package(best_cpp 1 CONFIG REQUIRED)
+target_link_libraries(my_application PRIVATE best_cpp::best_cpp)
+```
 
-- `AMWG<Real, N>::Init(start, logPosterior)` accepts a finite starting state/log density. The callback returns a **log** density. `-infinity`, NaN and positive infinity proposals are rejected. Exceptions propagate; a partially completed sweep can have advanced state but is not recorded.
-- `Sample(n)` appends exactly n completed sweeps. `NextSample()` appends one and returns N proposals. `Burn(n)` advances without modifying stored draws. Repeated calls preserve adaptation; `Init` resets it and reseeds the generator.
-- Updates are sequential Metropolis-within-Gibbs with diminishing batch adaptation toward 0.44 acceptance. The thread-count argument has been removed. Run separate instances with separate seeds for parallel chains. A single instance is not safe for concurrent mutation.
-- BEST owns its observations and is not copyable/movable. Groups must be nonempty and finite with positive pooled population variance; extreme scales whose prior bounds cannot be represented are rejected. Constant individual groups are allowed when pooled variance is positive.
-- Parameters are `(mu1, mu2, sigma1, sigma2, nu)`. For compatibility with the historical implementation, mean priors have pooled mean and **pooled SD × 1,000,000**; sigma priors are uniform from pooled SD / 1,000 to pooled SD × 1,000; `nu-1` is exponential with mean 29. The broad mean scale is a library choice, not a claim of exact equivalence to other BEST software.
-- `chain()` exposes draws for external diagnostics; `LogPosterior(params)` supports inspection. `ComputeStats` requires samples and returns the mean difference and shortest interval covering ceil(0.95*n) empirical draws. This is a shortest contiguous sample interval, not a general multimodal highest-density region.
-- Statistics use floating-point containers; `stdev` is the population SD. Invalid domains/empty data throw exceptions. Extreme-tail densities can round to zero; use log-density helpers for inference.
+Set `CMAKE_PREFIX_PATH` to the installation prefix. `add_subdirectory` exposes the same target. The target supplies the include directory and C++17 requirement without changing global compiler flags. Tests, CLI and benchmarks are off by default.
 
-## Development
+For a raw-header integration, add the source `best/` directory to your include path. Public headers are `<best.hpp>`, `<amwg.hpp>` and `<stats.hpp>`. See the complete [installed CMake consumer](examples/cmake-consumer).
+
+## Bazel monorepos
+
+Version 1.0.0 is prepared in this branch but is not yet released or registered in BCR. Use a local checkout first:
+
+```starlark
+# MODULE.bazel
+bazel_dep(name = "best_cpp", version = "1.0.0", repo_name = "bayes")
+local_path_override(module_name = "best_cpp", path = "third_party/best-cpp")
+```
+
+Add `@bayes//:best_cpp` to your target's `deps`. The [independent consumer](examples/bazel-consumer) demonstrates repository renaming. Configure C++17 or later in your consuming toolchain (`--cxxopt=-std=c++17` for GCC/Clang); Bazel 9.2 is tested.
+
+For a remote dependency, replace the local override with `git_override(module_name = "best_cpp", remote = "https://github.com/jhurliman/best-cpp.git", commit = "<reviewed full commit SHA>")`. After BCR registration, the override can be removed. [RELEASING.md](RELEASING.md) covers the archive-based registry test and submission process.
+
+## Working with samples
+
+| Operation | Behavior |
+| --- | --- |
+| `Burn(n)` | Advance the sampler without retaining those draws. |
+| `Sample(n)` | Append exactly `n` completed sweeps. |
+| `ComputeStats(interval, mean)` | Summarize the difference in group means; requires retained samples. |
+| `chain()` | Read the five-parameter draws for external diagnostics. |
+| `LogPosterior(parameters)` | Evaluate the model's joint log density. |
+
+BEST owns its observations and cannot be copied or moved. Inputs must be nonempty and finite with positive pooled variance. Draws contain `(mu1, mu2, sigma1, sigma2, nu)`.
+
+The model retains the historical broad mean prior: pooled mean with standard deviation equal to pooled SD × 1,000,000. Group scales have uniform priors from pooled SD / 1,000 to pooled SD × 1,000; `nu − 1` has an exponential prior with mean 29. These choices matter when data is sparse. See [API.md](API.md) for bounds, exception behavior and the precise empirical-interval definition.
+
+## A custom posterior
+
+The sampler is also usable without the two-group model. This example draws from a standard normal target:
+
+```cpp
+#include <amwg.hpp>
+#include <iostream>
+
+int main() {
+  AMWG<double, 1> sampler(50, 42);
+  sampler.Init({{0.0}}, [](const std::array<double, 1>& x) {
+    return -0.5 * x[0] * x[0]; // log density, up to a constant
+  });
+  sampler.Burn(5000);
+  sampler.Sample(10000);
+  std::cout << sampler.chain().size() << " draws\n";
+}
+```
+
+Coordinate updates are sequential. Run independently owned instances with separate seeds for parallel chains; do not mutate one instance concurrently. `Init` takes only the starting state and callback—the old thread-count argument has been removed.
+
+## Development and validation
 
 ```sh
 cmake -S . -B build -DBEST_CPP_BUILD_TESTS=ON -DBEST_CPP_BUILD_CLI=ON -DBEST_CPP_BUILD_BENCHMARKS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ./build/best-benchmark
-bazelisk test //:regression --cxxopt=-std=c++17
-BAZEL=bazelisk python3 tools/test_bcr.py
 ```
 
-The CLI accepts two whitespace-separated numeric files and reports malformed/missing input as errors. Existing IDE project files are historical; CMake is the supported portable build path. See [CHANGELOG.md](CHANGELOG.md), [PERFORMANCE.md](PERFORMANCE.md) and [RELEASING.md](RELEASING.md).
+CI checks numerical reference values, known-distribution samples, lifecycle behavior, reproducibility and imbalanced inputs. It also checks sanitizers, standalone headers, Windows/Linux/macOS CMake consumers and independent Bazel archive consumption. These are regression checks, not a proof of statistical convergence.
+
+The optional CLI compares two whitespace-separated numeric files: `./build/best group-a.txt group-b.txt`. [PERFORMANCE.md](PERFORMANCE.md) reports a narrowly scoped sampler benchmark. [CHANGELOG.md](CHANGELOG.md) explains the corrected sampling behavior and incompatible API changes; previous inference results should be recomputed.
+
+## License
+
+[MIT](LICENSE).
