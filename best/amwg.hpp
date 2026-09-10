@@ -29,9 +29,7 @@ public:
     : rng_(seed), seed_(seed), batchSize_(batchSize) {
     if (!batchSize) throw std::invalid_argument("batch size must be positive");
   }
-  // The legacy threads argument is retained for source compatibility only.
-  void Init(ParamArray start, PosteriorFunc posterior, uint32_t threads = 1) {
-    (void)threads;
+  void Init(ParamArray start, PosteriorFunc posterior) {
     if (!posterior) throw std::invalid_argument("posterior is required");
     for (auto x : start)
       if (!std::isfinite(x)) throw std::invalid_argument("nonfinite initial state");

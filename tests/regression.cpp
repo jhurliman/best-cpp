@@ -32,17 +32,17 @@ int main() { try {
   S s(50,42); rejects([&]{s.Sample(1);}); rejects([&]{s.Burn(0);});
   rejects([&]{s.Init({{0}},{});}); rejects([&]{s.Init({{0}},[](const S::ParamArray&){return NAN;});});
   auto normal=[](const S::ParamArray& p){return -p[0]*p[0]/2;};
-  for(unsigned threads:{0u,1u,4u}) {
-    s.Init({{0}},normal,threads); s.Burn(1000); s.Sample(101);
+  {
+    s.Init({{0}},normal); s.Burn(1000); s.Sample(101);
     check(s.chain().size()==101,"exact sample count");
     auto before=s.chain(); s.Burn(100); check(s.chain()==before,"burn preserves chain");
     s.Sample(0); check(s.chain()==before,"zero samples");
     check(s.NextSample()==1,"one proposal per coordinate");
     check(s.chain().back()==s.state(),"stores completed sweep");
   }
-  S a(50,12),b(50,12); a.Init({{0}},normal); b.Init({{0}},normal,8);
+  S a(50,12),b(50,12); a.Init({{0}},normal); b.Init({{0}},normal);
   a.Burn(77); a.Sample(123); b.Burn(77); b.Sample(23); b.Sample(100);
-  check(a.chain()==b.chain(),"chunking and legacy thread count reproducibility");
+  check(a.chain()==b.chain(),"split-call reproducibility");
   a.Init({{0}},normal); a.Burn(77); a.Sample(123); check(a.chain()==b.chain(),"reinitialization resets adaptation and RNG");
   a.chain().clear(); a.Sample(50); b.Sample(50);
   check(a.state()==b.state(),"adaptation independent of stored chain");
