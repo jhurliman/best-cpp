@@ -57,7 +57,7 @@ target_link_libraries(my_application PRIVATE best_cpp::best_cpp)
 
 Set `CMAKE_PREFIX_PATH` to the installation prefix. `add_subdirectory` exposes the same target. The target supplies the include directory and C++17 requirement without changing global compiler flags. Tests, CLI and benchmarks are off by default.
 
-For a raw-header integration, add the source `best/` directory to your include path. Public headers are `<best.hpp>`, `<amwg.hpp>` and `<stats.hpp>`. See the complete [installed CMake consumer](examples/cmake-consumer).
+For a raw-header integration, add the source `best/` directory to your include path. Public headers are `<best.hpp>`, `<amwg.hpp>`, `<stats.hpp>` and `<version.hpp>`. The version header exposes the `BEST_CPP_VERSION`, `BEST_CPP_VERSION_MAJOR`, `BEST_CPP_VERSION_MINOR` and `BEST_CPP_VERSION_PATCH` macros. See the complete [installed CMake consumer](examples/cmake-consumer).
 
 ## Bazel monorepos
 
