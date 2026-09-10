@@ -40,5 +40,9 @@ install(DIRECTORY best/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/best_cpp FILES_M
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/best_cpp)
 install(EXPORT best_cppTargets NAMESPACE best_cpp:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/best_cpp)
 configure_package_config_file(cmake/best_cppConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/best_cppConfig.cmake INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/best_cpp)
-write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/best_cppConfigVersion.cmake VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/best_cppConfigVersion.cmake VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion ARCH_INDEPENDENT)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/best_cppConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/best_cppConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/best_cpp)
+
+if(BEST_CPP_BUILD_TESTS)
+  add_test(NAME architecture-independent-version COMMAND ${CMAKE_COMMAND} -DVERSION_FILE=${CMAKE_CURRENT_BINARY_DIR}/best_cppConfigVersion.cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/architecture-version.cmake)
+endif()
