@@ -13,3 +13,4 @@
 These corrections change seeded sequences, inference results and invalid-input behavior. Old results should be recomputed. Reproducibility is within the same implementation and standard library; C++ random-distribution algorithms are not portable bit-for-bit.
 
 - Add CMake install/export targets, Bzlmod library and renamed-repository consumers, archive-based registry tests, standalone header checks, optional CLI/benchmark targets and Linux/macOS/Windows CI.
+- Clamp initial group scales to both prior bounds, including highly imbalanced group sizes.
