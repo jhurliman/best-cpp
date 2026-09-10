@@ -11,7 +11,7 @@ from prepare_bcr import prepare
 
 root = Path(__file__).resolve().parents[1]
 version = re.search(r'version\s*=\s*"([^"]+)"', (root / 'MODULE.bazel').read_text()).group(1)
-with tempfile.TemporaryDirectory(prefix='kdtree-bcr-') as temp:
+with tempfile.TemporaryDirectory(prefix='best-cpp-bcr-') as temp:
     base = Path(temp)
     archive = base / 'source.tar.gz'
     subprocess.run(['git','archive','--format=tar.gz',f'--prefix=best-cpp-{version}/',f'--output={archive}','HEAD'],cwd=root,check=True)
