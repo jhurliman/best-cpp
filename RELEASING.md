@@ -1,6 +1,6 @@
-# Preparing the first versioned release
+# Releasing best-cpp
 
-Version 1.0.0 is prepared, not published. No prior release tags were present during this audit. This release changes historical sampling results, seeded sequences, threading behavior and error handling; read CHANGELOG.md before upgrading. Recompute previous inference results.
+Version 1.0.0 is the first versioned release. It changes historical sampling results, seeded sequences, threading behavior and error handling; read CHANGELOG.md before upgrading. Recompute previous inference results.
 
 1. Merge the sampler-correctness PR, then its packaging follow-up. Require Linux/macOS regression and sanitizer jobs, Windows/Linux/macOS CMake consumers, and the Bazel archive-consumer job to pass.
 2. Verify `CMakeLists.txt`, `MODULE.bazel`, `best/version.hpp`, the consumer module and changelog agree on 1.0.0. Run the commands in README.md from the reviewed commit. The archive test uses committed HEAD, so commit release files before running it.
