@@ -61,7 +61,7 @@ For a raw-header integration, add the source `best/` directory to your include p
 
 ## Bazel monorepos
 
-Version 1.0.0 is prepared in this branch but is not yet released or registered in BCR. Use a local checkout first:
+Use Bzlmod with a local checkout. This example does not require a Bazel Central Registry entry:
 
 ```starlark
 # MODULE.bazel
