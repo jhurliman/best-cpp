@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (prepared, not published)
+## 1.0.0 — 2026-09-10
 
 - Replace speculative parallel proposals with sequential adaptive Metropolis-within-Gibbs. Remove shared random-generator races and proposal-selection bias. Remove the thread-count argument from `AMWG::Init`; callers now pass only the starting state and log-posterior callback.
 - `Sample(n)` records exactly n completed sweeps; `Burn(n)` advances without retaining samples. Adaptation tracks sweeps independently of chain storage. Reinitialization resets the seeded generator and adaptation. Sampling no longer prints progress.
